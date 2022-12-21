@@ -89,6 +89,73 @@ And at the `Password` prompt paste in your access token.
 
 Create a new Action and select the Docker Image workflow. 
 
+TODO try it!
+
+
+### Publish Changes to Docker Hub
+
+
+Open the repository Settings, and go to Secrets > Actions.
+
+Create a new secret named `DOCKER_HUB_USERNAME` and your Docker ID as value.
+
+
+Create a new Personal Access Token (PAT) for Docker Hub.
+
+TODO create an Access Token for GitHub
+
+
+Add the PAT as a second secret in your GitHub repository, with the name DOCKER_HUB_ACCESS_TOKEN.
+
+
+TODO 
+
+Go to your repository on GitHub and then select the Actions tab.
+
+Under "Choose a Workflow", click "...set up a workflow yourself."
+
+This takes you to a page for creating a new GitHub actions workflow file in your repository, under `.github/workflows/main.yml` by default.
+
+In the editor window, copy and paste the following YAML configuration.
+```yml
+name: Docker Hub CI
+
+on:
+  push:
+    branches:
+      - "main"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Checkout
+        uses: actions/checkout@v3
+      -
+        name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+      -
+        name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      -
+        name: Build and push
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/clockbox:latest
+```
+
+TODO explain above
+
+Start a commit. 
+
+
 
 
 
