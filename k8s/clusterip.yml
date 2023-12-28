@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: eks-noder-ip
+spec:
+  type: ClusterIP
+  selector:
+    app: noder
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80

@@ -251,7 +251,7 @@ spec:
         image: nielsenjared/noder:latest
         ports:
         - name: http
-          containerPort: 5000
+          containerPort: 80
         imagePullPolicy: IfNotPresent
       nodeSelector:
         kubernetes.io/os: linux
@@ -265,7 +265,304 @@ kubectl apply -f eks-noder-deployment.yml
 
 The response will be:
 ```sh
-deployment.apps/flaskernetes created
+deployment.apps/nodeernetes created
 ```
 
 
+### Creating Kubernetes Service Manifest
+
+
+TODO `eks-noder-service.yml`
+
+```yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: nodernetes
+  namespace: eks-noder
+  labels:
+    app: noder
+spec:
+  selector:
+    app: noder
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+```
+
+Apply the service manifest: 
+```sh
+  kubectl apply -f eks-noder-service.yml
+```
+
+
+The response will be:
+```
+service/nodernetes created
+```
+
+
+### View Resources and Details 
+
+View the resources in the `noder` namespace: 
+```sh
+kubectl get all -n eks-noder
+```
+
+```sh
+NAME                              READY   STATUS    RESTARTS   AGE
+pod/nodernetes-67789fc995-64kf6   1/1     Running   0          2m14s
+pod/nodernetes-67789fc995-n6pj7   1/1     Running   0          2m14s
+pod/nodernetes-67789fc995-qk5xr   1/1     Running   0          2m14s
+
+NAME                         READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/nodernetes   3/3     3            3           2m15s
+
+NAME                                    DESIRED   CURRENT   READY   AGE
+replicaset.apps/nodernetes-67789fc995   3         3         3       2m15s
+```
+
+View the details: 
+
+```sh
+kubectl -n eks-noder describe service nodernetes
+```
+
+The output will be similar to the following: 
+```sh
+Name:              nodernetes
+Namespace:         eks-noder
+Labels:            app=noder
+Annotations:       <none>
+Selector:          app=noder
+Type:              ClusterIP
+IP Family Policy:  SingleStack
+IP Families:       IPv4
+IP:                10.100.27.118
+IPs:               10.100.27.118
+Port:              <unset>  8080/TCP
+TargetPort:        8080/TCP
+Endpoints:         192.168.15.169:8080,192.168.32.169:8080,192.168.48.198:8080
+Session Affinity:  None
+Events:            <none>
+```
+
+View the details of a pod:
+```sh
+kubectl -n eks-noder describe pod nodernetes-67789fc995-64kf6
+```
+
+
+Replace the alphanumeric values with those from one your pods listed above. 
+
+
+The output will be similar to the following:
+```sh
+Name:             nodernetes-67789fc995-64kf6
+Namespace:        eks-noder
+Priority:         0
+Service Account:  default
+Node:             ip-192-168-46-106.ec2.internal/192.168.46.106
+Start Time:       Wed, 21 Dec 2022 11:59:28 -0500
+Labels:           app=noder
+                  pod-template-hash=67789fc995
+Annotations:      kubernetes.io/psp: eks.privileged
+Status:           Running
+IP:               192.168.48.198
+IPs:
+  IP:           192.168.48.198
+Controlled By:  ReplicaSet/nodernetes-67789fc995
+Containers:
+  noder:
+    Container ID:   docker://db78c3ffba30d0b57f7c8a8cbc5428d95c96726def2f3dc942889597bb187fd5
+    Image:          nielsenjared/noder:latest
+    Image ID:       docker-pullable://nielsenjared/noder@sha256:0ed2ce1e89407c54a146e67bad14e8219c8ed688392cfd63db73d27f524241b7
+    Port:           8080/TCP
+    Host Port:      0/TCP
+    State:          Running
+      Started:      Wed, 21 Dec 2022 11:59:33 -0500
+    Ready:          True
+    Restart Count:  0
+    Environment:    <none>
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-j482x (ro)
+Conditions:
+  Type              Status
+  Initialized       True 
+  Ready             True 
+  ContainersReady   True 
+  PodScheduled      True 
+Volumes:
+  kube-api-access-j482x:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    ConfigMapOptional:       <nil>
+    DownwardAPI:             true
+QoS Class:                   BestEffort
+Node-Selectors:              kubernetes.io/os=linux
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type    Reason     Age    From               Message
+  ----    ------     ----   ----               -------
+  Normal  Scheduled  5m33s  default-scheduler  Successfully assigned eks-noder/nodernetes-67789fc995-64kf6 to ip-192-168-46-106.ec2.internal
+  Normal  Pulling    5m32s  kubelet            Pulling image "nielsenjared/noder:latest"
+  Normal  Pulled     5m29s  kubelet            Successfully pulled image "nielsenjared/noder:latest" in 3.605031397s
+  Normal  Created    5m28s  kubelet            Created container noder
+  Normal  Started    5m28s  kubelet            Started container noder
+```
+
+### Root a Pod
+
+```
+kubectl exec -it nodernetes-67789fc995-64kf6 -n eks-noder -- /bin/bash
+```
+
+This will ssh in the pod as root.
+
+
+### Hit the Server 
+```
+curl nodernetes
+```
+
+### TODO DNS
+```sh
+cat /etc/resolv.conf
+```
+
+TODO
+```sh
+nameserver 10.100.0.10
+search eks-flasker.svc.cluster.local svc.cluster.local cluster.local ec2.internal
+options ndots:5
+```
+
+10.100.0.10 is automatically assigned as the nameserver for all pods deployed to the cluster.
+
+
+#### Create a Cluster IP Service
+
+Verify the pods are running and associated with an IP address: 
+```sh
+kubectl get all -n eks-noder -o wide
+```
+
+Create a `clusterip.yml` file:
+```yml
+TODO
+
+```
+
+And create the service:
+```sh
+kubectl create -f clusterip.yml
+```
+
+##### Get the Cluster IP Number
+TODO
+```sh
+kubectl get service eks-noder-ip
+```
+
+The output will be something similar to the following:
+```sh
+NAME           TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE
+eks-noder-ip   ClusterIP   10.100.99.47   <none>        80/TCP    56s
+```
+
+#### Create a NodePort Service
+
+Create a file, `nodeport.yml` and add the following: 
+
+```yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: eks-noder-nodeport
+spec:
+  type: NodePort
+  selector:
+    app: noder
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+```
+
+Create the NodePort object:
+```sh
+kubectl create -f nodeport.yml
+```
+
+The output will be:
+```sh
+service/eks-noder-nodeport created
+```
+
+Let's get the details on our NodePort service:
+```sh
+kubectl get service/eks-noder-nodeport
+```
+
+The output will be similar to the following: 
+```sh
+NAME                 TYPE       CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
+eks-noder-nodeport   NodePort   10.100.148.73   <none>        80:31881/TCP   66s
+```
+
+TODO delete the NodePort service? 
+```sh
+kubectl delete service eks-noder-nodeport
+```
+
+#### Create a LoadBalancer Service
+
+Create a `loadbalancer.yml` file and add the following: 
+
+```yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: eks-noder-loadbalancer
+spec:
+  type: LoadBalancer
+  selector:
+    app: noder
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+```
+
+Create the LoadBalancer:
+```sh
+kubectl create -f loadbalancer.yml
+```
+
+You'll get a confirmation response: 
+```sh
+service/eks-noder-loadbalancer created
+```
+
+Let's get the details:
+```sh
+kubectl get service/eks-noder-loadbalancer
+```
+
+The output will be similar to the following:
+```sh
+NAME                     TYPE           CLUSTER-IP     EXTERNAL-IP                                                               PORT(S)        AGE
+eks-noder-loadbalancer   LoadBalancer   10.100.33.18   a19cc054e55894bb59bc70e515094962-1554247827.us-east-1.elb.amazonaws.com   80:31514/TCP   58s
+```
+
+
+Hey hey! There's our external IP! Let's hit it!
+
+#### Hit the Server! 
+
+```sh
+curl -silent a19cc054e55894bb59bc70e515094962-1554247827.us-east-1.elb.amazonaws.com:80 | grep title
+```
